@@ -67,7 +67,6 @@
             <div class="field"><label>Отчество <span class="note">(необязательно)</span></label><input id="middleName" type="text"></div>
             <div class="field"><label>Телефон *</label><input id="phone" type="tel" placeholder="+7 900 000-00-00"></div>
             <div class="field"><label>Email</label><input id="email" type="email" placeholder="name@example.com"></div>
-            <div class="field"><label>Название компании</label><input id="company" type="text" placeholder="ПрофТрейдЛаб"></div>
             <label class="checkbox"><input id="consent" type="checkbox"> Согласен на обработку персональных данных</label>
             <div class="note">Данные нужны для выдачи приза и связи с вами.</div>
 
@@ -112,7 +111,7 @@
   const ASSETS_BASE = 'assets/';
   const GROUP_URL   = 'https://t.me/proftradelab';
   // Web App URL (обязательно /exec)
-  const SHEETS_URL  = 'https://script.google.com/macros/s/AKfycbwflLM7cNOQCkH0_NQ5jBdiT-ScAKBLRJIfBz-o6T3_FE9whAwXbaL2zLUogjJmTnm89Q/exec';
+  const SHEETS_URL  = 'https://script.google.com/macros/s/AKfycbzRHqPMrXs9p40gWvI-s4NIFM9snA2jtaDkIAe01x6La7YER3aWIYJ6oYJvpp21FtcC-Q/exec';
   // ==========================
 
   const tg = window.Telegram?.WebApp;
@@ -122,13 +121,8 @@
   document.getElementById('qrImg').src = ASSETS_BASE + 'qr_group.jpg';
 
   // адаптация высоты
-  function setAppHeight(){
-    const vh=(window.visualViewport?.height)||innerHeight;
-    document.documentElement.style.setProperty('--app-height', vh+'px');
-  }
-  setAppHeight();
-  addEventListener('resize', setAppHeight);
-  window.visualViewport?.addEventListener('resize', setAppHeight, {passive:true});
+  function setAppHeight(){ const vh=(window.visualViewport?.height)||innerHeight; document.documentElement.style.setProperty('--app-height', vh+'px'); }
+  setAppHeight(); addEventListener('resize', setAppHeight); window.visualViewport?.addEventListener('resize', setAppHeight, {passive:true});
 
   // fullscreen на форме
   const fsBtn = document.getElementById('fsBtn');
@@ -136,18 +130,14 @@
     try{
       if(!document.fullscreenElement && !document.webkitFullscreenElement){
         const el=document.documentElement;
-        if(el.requestFullscreen) await el.requestFullscreen();
-        else if(el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+        if(el.requestFullscreen) await el.requestFullscreen(); else if(el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
         try{ await screen.orientation?.lock('landscape'); }catch(_){}
       }else{
-        if(document.exitFullscreen) await document.exitFullscreen();
-        else if(document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        if(document.exitFullscreen) await document.exitFullscreen(); else if(document.webkitExitFullscreen) await document.webkitExitFullscreen();
       }
     }catch(e){}
   });
-  document.addEventListener('fullscreenchange', ()=>{
-    fsBtn.textContent=(document.fullscreenElement||document.webkitFullscreenElement)?'Свернуть':'Во весь экран';
-  });
+  document.addEventListener('fullscreenchange', ()=>{ fsBtn.textContent=(document.fullscreenElement||document.webkitFullscreenElement)?'Свернуть':'Во весь экран'; });
 
   // ======= ИГРА =======
   const canvas=document.getElementById('game'), ctx=canvas.getContext('2d');
@@ -173,57 +163,19 @@
     for(let x=-tileW;x<W+tileW;x+=tileW) ctx.drawImage(bgTile,x+bgOffset,0,tileW,H);
   }
 
-  const DECOS=[
-    {img:img(ASSETS_BASE+'deco_clock.png'),w:64,h:64,weight:2},
-    {img:img(ASSETS_BASE+'deco_panel.png'),w:80,h:80,weight:3},
-    {img:img(ASSETS_BASE+'deco_console.png'),w:72,h:72,weight:1}
-  ];
+  const DECOS=[{img:img(ASSETS_BASE+'deco_clock.png'),w:64,h:64,weight:2},{img:img(ASSETS_BASE+'deco_panel.png'),w:80,h:80,weight:3},{img:img(ASSETS_BASE+'deco_console.png'),w:72,h:72,weight:1}];
   let bgDecos=[], MAX_DECOS=6, decoTimer=0, decoMin=1800, decoVar=2200;
-  function pickDeco(){
-    const t=DECOS.reduce((s,d)=>s+d.weight,0);
-    let r=Math.random()*t;
-    for(const d of DECOS){ r-=d.weight; if(r<=0)return d }
-    return DECOS[0];
-  }
-  function wallY(){
-    const top=Math.round(H*0.20), bot=Math.round(H*0.45);
-    return Math.floor(top+Math.random()*(bot-top));
-  }
+  function pickDeco(){const t=DECOS.reduce((s,d)=>s+d.weight,0);let r=Math.random()*t;for(const d of DECOS){r-=d.weight;if(r<=0)return d}return DECOS[0]}
+  function wallY(){const top=Math.round(H*0.20), bot=Math.round(H*0.45); return Math.floor(top+Math.random()*(bot-top))}
   function scheduleDeco(){decoTimer=(performance?.now?.()||Date.now())+decoMin+Math.random()*decoVar}
-  function spawnDeco(now){
-    if(bgDecos.length>=MAX_DECOS) return;
-    if(now>=decoTimer){
-      const t=pickDeco(), s=0.85+Math.random()*0.4;
-      bgDecos.push({x:W+40,y:wallY(),w:Math.round(t.w*s),h:Math.round(t.h*s),img:t.img});
-      scheduleDeco();
-    }
-  }
-  function drawDecos(){
-    const v=worldSpeed*0.5;
-    for(let i=bgDecos.length-1;i>=0;i--){
-      const d=bgDecos[i];
-      d.x-=v;
-      if(d.img?.complete) ctx.drawImage(d.img,d.x,d.y,d.w,d.h);
-      if(d.x<-d.w-20) bgDecos.splice(i,1);
-    }
-  }
+  function spawnDeco(now){ if(bgDecos.length>=MAX_DECOS) return; if(now>=decoTimer){const t=pickDeco(), s=0.85+Math.random()*0.4; bgDecos.push({x:W+40,y:wallY(),w:Math.round(t.w*s),h:Math.round(t.h*s),img:t.img}); scheduleDeco()} }
+  function drawDecos(){const v=worldSpeed*0.5; for(let i=bgDecos.length-1;i>=0;i--){const d=bgDecos[i]; d.x-=v; if(d.img?.complete) ctx.drawImage(d.img,d.x,d.y,d.w,d.h); if(d.x<-d.w-20) bgDecos.splice(i,1)}}
 
-  const playerSprites={
-    run:[img(ASSETS_BASE+'player_run1.png'),img(ASSETS_BASE+'player_run2.png')],
-    jump:img(ASSETS_BASE+'player_jump.png')
-  };
+  const playerSprites={run:[img(ASSETS_BASE+'player_run1.png'),img(ASSETS_BASE+'player_run2.png')], jump:img(ASSETS_BASE+'player_jump.png')};
   const RUN_MS=140; let animMs=0, animFrame=0, lastTs=performance?.now?.()||Date.now();
   function drawPlayer(){
-    if(!player.onGround){
-      const j=playerSprites.jump;
-      if(j?.complete) ctx.drawImage(j,player.x,player.y,player.w,player.h);
-    } else {
-      const now=performance?.now?.()||Date.now(), dt=Math.min(100,now-lastTs);
-      lastTs=now; animMs+=dt;
-      if(animMs>=RUN_MS){animMs-=RUN_MS; animFrame=(animFrame+1)%2}
-      const r=playerSprites.run[animFrame];
-      if(r?.complete) ctx.drawImage(r,player.x,player.y,player.w,player.h);
-    }
+    if(!player.onGround){ const j=playerSprites.jump; if(j?.complete) ctx.drawImage(j,player.x,player.y,player.w,player.h) }
+    else { const now=performance?.now?.()||Date.now(), dt=Math.min(100,now-lastTs); lastTs=now; animMs+=dt; if(animMs>=RUN_MS){animMs-=RUN_MS; animFrame=(animFrame+1)%2} const r=playerSprites.run[animFrame]; if(r?.complete) ctx.drawImage(r,player.x,player.y,player.w,player.h) }
   }
 
   // физика — плавное падение + двойной прыжок
@@ -235,22 +187,10 @@
   let player={x:50,y:0,w:56,h:56,vy:0,onGround:true,jumpCount:0,firstAt:0};
   player.y=(H-32)-player.h;
 
-  const SPRITES={
-    HIGH:img(ASSETS_BASE+'obstacle_high.png'),
-    WIDE:img(ASSETS_BASE+'obstacle_wide.png'),
-    MEDIUM:img(ASSETS_BASE+'obstacle_medium.png'),
-    FLY:img(ASSETS_BASE+'obstacle_fly.png')
-  };
+  const SPRITES={HIGH:img(ASSETS_BASE+'obstacle_high.png'), WIDE:img(ASSETS_BASE+'obstacle_wide.png'), MEDIUM:img(ASSETS_BASE+'obstacle_medium.png'), FLY:img(ASSETS_BASE+'obstacle_fly.png')};
   let obstacles=[], spawnT=0, lastType=-1;
-  function chooseType(){
-    let pool=[0,1,2,3];
-    if(lastType!==-1) pool=pool.filter(t=>t!==lastType);
-    const t=pool[(Math.random()*pool.length)|0];
-    lastType=t; return t;
-  }
-  function spawnObstacle(){
-    const type=chooseType();
-    let w,h,y,sprite;
+  function chooseType(){let pool=[0,1,2,3]; if(lastType!==-1) pool=pool.filter(t=>t!==lastType); const t=pool[(Math.random()*pool.length)|0]; lastType=t; return t}
+  function spawnObstacle(){ const type=chooseType(); let w,h,y,sprite;
     if(type===0){w=56;h=56;sprite=SPRITES.MEDIUM;y=GROUND_Y-h}
     else if(type===1){w=96;h=56;sprite=SPRITES.WIDE;y=GROUND_Y-h}
     else if(type===2){w=52;h=104;sprite=SPRITES.HIGH;y=GROUND_Y-h}
@@ -258,36 +198,17 @@
     obstacles.push({x:W+10,y,w,h,sprite,type,passed:false});
   }
   const OB_W=0.82, OB_H=0.78, PL_W=0.80, PL_H=0.90, OBH_W=0.75, OBH_H=0.66;
-  function pHit(p){
-    const w=p.w*PL_W,h=p.h*PL_H,x=p.x+(p.w-w)/2,y=p.y+(p.h-h);
-    return {x,y,w,h};
-  }
-  function oHit(o){
-    let w,h;
-    if(o.type===2){w=o.w*OBH_W;h=o.h*OBH_H}else{w=o.w*OB_W;h=o.h*OB_H}
-    const x=o.x+(o.w-w)/2;
-    const isAir=o.y<(GROUND_Y-o.h);
-    const y=isAir?(o.y+(o.h-h)/2):(o.y+(o.h-h));
-    return {x,y,w,h};
-  }
-  function overlap(a,b){
-    return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
-  }
+  function pHit(p){const w=p.w*PL_W,h=p.h*PL_H,x=p.x+(p.w-w)/2,y=p.y+(p.h-h); return {x,y,w,h}}
+  function oHit(o){ let w,h; if(o.type===2){w=o.w*OBH_W;h=o.h*OBH_H}else{w=o.w*OB_W;h=o.h*OB_H} const x=o.x+(o.w-w)/2; const isAir=o.y<(GROUND_Y-o.h); const y=isAir?(o.y+(o.h-h)/2):(o.y+(o.h-h)); return {x,y,w,h} }
+  function overlap(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y }
 
   function jump(){
     if(!sessionActive() || !ready) return;
-    if(player.onGround){
-      player.vy=JUMP_V1; player.onGround=false; player.jumpCount=1; player.firstAt=Date.now(); return;
-    }
+    if(player.onGround){ player.vy=JUMP_V1; player.onGround=false; player.jumpCount=1; player.firstAt=Date.now(); return }
     const since=Date.now()-player.firstAt;
-    if(player.jumpCount===1 && since<=J2_WIN && player.vy<J2_MINVY){
-      player.vy=JUMP_V2; player.jumpCount=2;
-    }
+    if(player.jumpCount===1 && since<=J2_WIN && player.vy<J2_MINVY){ player.vy=JUMP_V2; player.jumpCount=2 }
   }
-  addEventListener('keydown',e=>{
-    if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jump()}
-    if(e.code==='Enter' && !sessionActive()) showResults();
-  });
+  addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();jump()} if(e.code==='Enter' && !sessionActive()) showResults() });
   canvas.addEventListener('pointerdown', jump);
 
   let rafId=null;
@@ -296,125 +217,54 @@
     drawBg(); spawnDeco(performance?.now?.()||Date.now()); drawDecos();
     ctx.fillStyle='#53B5AF'; ctx.fillRect(0,GROUND_Y,W,2);
 
-    if(!sessionActive()){
-      dim('Сессия завершена');
-      return;
-    }
+    if(!sessionActive()){ dim('Сессия завершена'); return }
 
-    const elapsed=(Date.now()-runStart)/1000;
-    worldSpeed=SPEED_START + SPEED_ACCEL*elapsed;
+    const elapsed=(Date.now()-runStart)/1000; worldSpeed=SPEED_START + SPEED_ACCEL*elapsed;
 
-    spawnT -= worldSpeed;
-    if(spawnT<=0){
-      spawnObstacle();
-      const bonus=(Math.random()<0.18)?160:0;
-      spawnT = SPAWN_MIN + Math.random()*SPAWN_VAR + bonus;
-    }
+    spawnT -= worldSpeed; if(spawnT<=0){ spawnObstacle(); const bonus=(Math.random()<0.18)?160:0; spawnT = SPAWN_MIN + Math.random()*SPAWN_VAR + bonus }
 
     player.vy += GRAVITY; player.y += player.vy;
-    if(player.y >= GROUND_Y-player.h){
-      player.y=GROUND_Y-player.h; player.vy=0;
-      if(!player.onGround){ player.onGround=true; player.jumpCount=0 }
-    } else player.onGround=false;
+    if(player.y >= GROUND_Y-player.h){ player.y=GROUND_Y-player.h; player.vy=0; if(!player.onGround){ player.onGround=true; player.jumpCount=0 } } else player.onGround=false;
 
     for(let i=obstacles.length-1;i>=0;i--){
       const o=obstacles[i]; o.x -= worldSpeed;
-      if(o.sprite?.complete){
-        ctx.imageSmoothingEnabled=false;
-        ctx.drawImage(o.sprite,o.x,o.y,o.w,o.h);
-      } else {
-        ctx.fillStyle='#53B5AF'; ctx.fillRect(o.x,o.y,o.w,o.h);
-      }
+      if(o.sprite?.complete) { ctx.imageSmoothingEnabled=false; ctx.drawImage(o.sprite,o.x,o.y,o.w,o.h) } else { ctx.fillStyle='#53B5AF'; ctx.fillRect(o.x,o.y,o.w,o.h) }
       if(o.x+o.w<0) obstacles.splice(i,1);
       if(!o.passed && o.x+o.w<player.x){ o.passed=true; score++; hud() }
-      if(overlap(pHit(player), oHit(o))){
-        if(score>best){ best=score; hud() }
-        softReset(true); break;
-      }
+      if(overlap(pHit(player), oHit(o))){ if(score>best){ best=score; hud() } softReset(true); break; }
     }
 
     drawPlayer();
     loop();
   }
 
-  const scoreEl=document.getElementById('score'),
-        bestEl=document.getElementById('best'),
-        timeEl=document.getElementById('timeLeft');
-  function hud(){
-    scoreEl.textContent=String(score);
-    bestEl.textContent=String(best);
-  }
-  document.getElementById('restart').onclick=()=>{
-    if(!sessionActive()) return;
-    countdown(()=>{ softReset(true) });
-  }
+  const scoreEl=document.getElementById('score'), bestEl=document.getElementById('best'), timeEl=document.getElementById('timeLeft');
+  function hud(){ scoreEl.textContent=String(score); bestEl.textContent=String(best) }
+  document.getElementById('restart').onclick=()=>{ if(!sessionActive()) return; countdown(()=>{ softReset(true) }) }
   document.getElementById('newSession').onclick=()=>openReg();
 
-  const reg=document.getElementById('regOverlay'),
-        result=document.getElementById('resultOverlay');
-  const startBtn=document.getElementById('startBtn'),
-        openGroupBtn=document.getElementById('openGroup'),
-        toRegBtn=document.getElementById('toReg'),
-        sendLeadBtn=document.getElementById('sendLead');
-  const regErr=document.getElementById('regErr'),
-        lastNameIn=document.getElementById('lastName'),
-        firstNameIn=document.getElementById('firstName'),
-        middleNameIn=document.getElementById('middleName'),
-        phoneIn=document.getElementById('phone'),
-        emailIn=document.getElementById('email'),
-        companyIn=document.getElementById('company'),
-        consentIn=document.getElementById('consent');
-  const finalBest=document.getElementById('finalBest'),
-        prizeText=document.getElementById('prizeText');
+  const reg=document.getElementById('regOverlay'), result=document.getElementById('resultOverlay');
+  const startBtn=document.getElementById('startBtn'), openGroupBtn=document.getElementById('openGroup'), toRegBtn=document.getElementById('toReg'), sendLeadBtn=document.getElementById('sendLead');
+  const regErr=document.getElementById('regErr'), lastNameIn=document.getElementById('lastName'), firstNameIn=document.getElementById('firstName'), middleNameIn=document.getElementById('middleName'), phoneIn=document.getElementById('phone'), emailIn=document.getElementById('email'), consentIn=document.getElementById('consent');
+  const finalBest=document.getElementById('finalBest'), prizeText=document.getElementById('prizeText');
 
   let profile=null, sessionEndAt=null, timerId=null;
 
-  function openReg(){
-    regErr.textContent='';
-    reg.style.display='flex';
-  }
+  function openReg(){ regErr.textContent=''; reg.style.display='flex' }
   function closeReg(){ reg.style.display='none' }
 
-  function clearRegForm(){
-    lastNameIn.value = '';
-    firstNameIn.value = '';
-    middleNameIn.value = '';
-    phoneIn.value = '';
-    emailIn.value = '';
-    if (companyIn) companyIn.value = '';
-    consentIn.checked = false;
-    profile = null;
-  }
-
-  function normPhone(raw){
-    if(!raw) return '';
-    let d=raw.replace(/[^\d]/g,'');
-    if(d.length===11&&d[0]==='8') d='7'+d.slice(1);
-    if(d.length===10) d='7'+d;
-    if(d.length===11&&d[0]==='7') return '+7'+d.slice(1);
-    return '';
-  }
-  function emailOk(v){
-    if(!v) return true;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
-  }
+  function normPhone(raw){ if(!raw) return ''; let d=raw.replace(/[^\d]/g,''); if(d.length===11&&d[0]==='8') d='7'+d.slice(1); if(d.length===10) d='7'+d; if(d.length===11&&d[0]==='7') return '+7'+d.slice(1); return '' }
+  function emailOk(v){ if(!v) return true; return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) }
 
   startBtn.onclick=()=>{
-    const lastName=lastNameIn.value.trim(),
-          firstName=firstNameIn.value.trim(),
-          middleName=middleNameIn.value.trim(),
-          phoneRaw=phoneIn.value.trim(),
-          email=emailIn.value.trim(),
-          company=companyIn.value.trim();
-
+    const lastName=lastNameIn.value.trim(), firstName=firstNameIn.value.trim(), middleName=middleNameIn.value.trim(), phoneRaw=phoneIn.value.trim(), email=emailIn.value.trim();
     if(!lastName){regErr.textContent='Укажите фамилию';return}
     if(!firstName){regErr.textContent='Укажите имя';return}
-    const phone=normPhone(phoneRaw);
-    if(!phone){regErr.textContent='Некорректный телефон. Пример: +7 900 000-00-00';return}
+    const phone=normPhone(phoneRaw); if(!phone){regErr.textContent='Некорректный телефон. Пример: +7 900 000-00-00';return}
     if(!consentIn.checked){regErr.textContent='Нужно согласие на обработку персональных данных';return}
     if(!emailOk(email)){regErr.textContent='Некорректный e-mail';return}
 
-    profile={lastName,firstName,middleName,phone,email,company};
+    profile={lastName,firstName,middleName,phone,email};
     best=0; score=0; hud();
 
     sessionEndAt = Date.now() + 2*60*1000; // 2 минуты
@@ -422,29 +272,22 @@
     countdown(()=>{ hardReset(); tick(); });
   };
 
-  openGroupBtn.onclick=()=>{
-    try{
-      tg ? tg.openLink(GROUP_URL,{try_instant_view:false}) : window.open(GROUP_URL,'_blank');
-    }catch(e){}
-  };
-
-  toRegBtn.onclick=()=>{
-    result.style.display='none';
-    clearRegForm();
-    openReg();
-  };
+  openGroupBtn.onclick=()=>{ try{ tg ? tg.openLink(GROUP_URL,{try_instant_view:false}) : window.open(GROUP_URL,'_blank') }catch(e){} };
+  toRegBtn.onclick=()=>{ result.style.display='none'; openReg() };
 
   // отправка в таблицу
   async function sendToSheets(payload){
     try{
+      // основной путь с чтением ответа
       const res = await fetch(SHEETS_URL, {
         method: 'POST',
         headers: { 'Content-Type':'application/json; charset=UTF-8' },
         body: JSON.stringify(payload),
       });
-      // можно логировать ответ, если нужно:
+      // опционально можно проверить:
       // const json = await res.json(); console.log('Sheets:', json);
     }catch(e){
+      // запасной путь (на случай редких CORS-особенностей)
       try{
         await fetch(SHEETS_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(payload) });
       }catch(_){}
@@ -458,27 +301,11 @@
     const payload={ type:'lead', profile, best, ts:Date.now() };
     sendToSheets(payload);
     result.style.display='none';
-    clearRegForm();
     openReg();
   }
 
-  function tick(){
-    clearInterval(timerId);
-    timerId=setInterval(()=>{
-      const left=Math.max(0,(sessionEndAt||0)-Date.now());
-      timeEl.textContent=fmt(left);
-      if(left<=0){
-        clearInterval(timerId);
-        showResults();
-      }
-    },200);
-  }
-  function fmt(ms){
-    const s=Math.ceil(ms/1000),
-          m=Math.floor(s/60),
-          ss=('0'+(s%60)).slice(-2);
-    return ('0'+m).slice(-2)+':'+ss;
-  }
+  function tick(){ clearInterval(timerId); timerId=setInterval(()=>{ const left=Math.max(0,(sessionEndAt||0)-Date.now()); timeEl.textContent=fmt(left); if(left<=0){ clearInterval(timerId); showResults() } },200) }
+  function fmt(ms){ const s=Math.ceil(ms/1000), m=Math.floor(s/60), ss=('0'+(s%60)).slice(-2); return ('0'+m).slice(-2)+':'+ss }
   function sessionActive(){ return !!sessionEndAt && Date.now()<sessionEndAt }
 
   function showResults(){
@@ -487,53 +314,18 @@
     // авто-отправка результатов
     autoSendAndBackToReg();
   }
-  function getPrize(p){
-    if(p>=70)return'Термос';
-    if(p>=50)return'Шоппер';
-    if(p>=30)return'Блокнот и ручка';
-    if(p>=20)return'Брелок';
-    return '—';
-  }
+  function getPrize(p){ if(p>=70)return'Термос'; if(p>=50)return'Шоппер'; if(p>=30)return'Блокнот и ручка'; if(p>=20)return'Брелок'; return '—' }
 
-  function countdown(cb){
-    ready=false; let t=3;
-    (function step(){
-      drawCountdown(t);
-      if(t===0){ ready=true; cb&&cb(); return }
-      setTimeout(()=>{ t--; step() },500);
-    })();
-  }
-  function drawCountdown(n){
-    drawBg(); spawnDeco(performance?.now?.()||Date.now()); drawDecos();
-    ctx.fillStyle='#53B5AF'; ctx.fillRect(0,GROUND_Y,W,2);
-    ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,W,H);
-    ctx.font='bold 56px monospace'; ctx.textAlign='center'; ctx.fillStyle='#53B5AF';
-    ctx.fillText(typeof n==='number'?n:' ', W/2, H/2);
-  }
-  function dim(msg){
-    ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,0,W,H);
-    ctx.font='16px monospace'; ctx.textAlign='center'; ctx.fillStyle='#fff';
-    ctx.fillText(msg, W/2, H/2);
-  }
+  function countdown(cb){ ready=false; let t=3; (function step(){ drawCountdown(t); if(t===0){ ready=true; cb&&cb(); return } setTimeout(()=>{ t--; step() },500) })() }
+  function drawCountdown(n){ drawBg(); spawnDeco(performance?.now?.()||Date.now()); drawDecos(); ctx.fillStyle='#53B5AF'; ctx.fillRect(0,GROUND_Y,W,2); ctx.fillStyle='rgba(0,0,0,.35)'; ctx.fillRect(0,0,W,H); ctx.font='bold 56px monospace'; ctx.textAlign='center'; ctx.fillStyle='#53B5AF'; ctx.fillText(typeof n==='number'?n:' ', W/2, H/2) }
+  function dim(msg){ ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(0,0,W,H); ctx.font='16px monospace'; ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.fillText(msg, W/2, H/2) }
 
-  function hardReset(){
-    runStart=Date.now();
-    score=0;
-    softReset(true);
-  }
-  function softReset(clearScore){
-    if(clearScore){score=0; hud()}
-    player.y=GROUND_Y-player.h; player.vy=0; player.onGround=true; player.jumpCount=0;
-    animMs=0; animFrame=0; lastTs=performance?.now?.()||Date.now();
-    obstacles.length=0; spawnT=0; bgDecos.length=0; bgOffset=0; scheduleDeco(); loop();
-  }
+  function hardReset(){ runStart=Date.now(); score=0; softReset(true) }
+  function softReset(clearScore){ if(clearScore){score=0; hud()} player.y=GROUND_Y-player.h; player.vy=0; player.onGround=true; player.jumpCount=0; animMs=0; animFrame=0; lastTs=performance?.now?.()||Date.now(); obstacles.length=0; spawnT=0; bgDecos.length=0; bgOffset=0; scheduleDeco(); loop() }
 
   resizeCanvas();
   // первый кадр — показать землю
-  (function(){
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#53B5AF'; ctx.fillRect(0,GROUND_Y,W,2);
-  })();
+  (function(){ ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#53B5AF'; ctx.fillRect(0,GROUND_Y,W,2) })();
 })();
 </script>
 </body>
